@@ -1,0 +1,10 @@
+Vào properties của solution
+chọn  C/C++ -> General
+copy đường link của file include và include\opencv2 vào additional include directories
+chọn linker -> gerneral
+copy đường lik của file opencv\build\x64\vc16\lib vào additional library directories
+chọn input
+chọn additional dependencies
+dán này vô
+opencv_world4100.lib
+opencv_world4100d.lib
