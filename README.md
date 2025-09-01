@@ -1,9 +1,3 @@
-Chắc chắn rồi! Dựa trên cấu trúc file, bản report chi tiết và file README cũ bạn cung cấp, tôi đã soạn lại một file `README.md` mới hoàn chỉnh, chuyên nghiệp và đầy đủ thông tin hơn.
-
-Bạn chỉ cần sao chép toàn bộ nội dung dưới đây và dán vào phần chỉnh sửa README trên trang GitHub của bạn.
-
----
-
 # 📧 EMAIL-CONTROLLING-PROJECT
 
 Đây là đồ án môn học Mạng máy tính tại Trường Đại học Khoa học Tự nhiên, cho phép điều khiển một máy tính chạy hệ điều hành Windows từ xa bằng cách gửi các lệnh thông qua tài khoản Gmail.
@@ -42,15 +36,41 @@ Dự án được xây dựng dựa trên mô hình Client-Server. Người dùn
 
 ```mermaid
 graph TD
-    A[Người dùng] -- 1. Gửi email chứa lệnh --> B[Hòm thư Gmail];
-    B -- 2. Lấy email mới nhất (IMAP) --> C[Client App];
-    C -- 3. Gửi lệnh qua Socket --> D[Server App];
-    D -- 4. Thực thi lệnh trên máy tính --> E[Hệ thống Windows];
-    E -- 5. Trả kết quả về --> D;
+    subgraph Máy người dùng
+        A[Gmail người dùng]
+        C[Client App]
+    end
+
+    subgraph Dịch vụ Email
+        B[Gmail chính (Hòm thư lệnh)]
+    end
+
+    subgraph Máy bị điều khiển
+        D[Server App]
+        E[Hệ thống Windows]
+    end
+
+    A -- 1. Gửi email chứa lệnh --> B;
+    B -- 2. Đọc email mới nhất --> C;
+    C -- 3. Gửi lệnh qua Socket --> D;
+    D -- 4. Thực thi lệnh --> E;
+    E -- 5. Trả kết quả --> D;
     D -- 6. Gửi kết quả qua Socket --> C;
-    C -- 7. Soạn và gửi email kết quả (SMTP) --> B;
-    B -- 8. Nhận email kết quả --> A;
+    C -- 7. Soạn và gửi email kết quả --> B;
+    B -- 8. Gửi email đến người dùng --> A;
+
 ```
+
+#### Diễn giải chi tiết
+
+1.  **Gửi lệnh:** **Người dùng** sử dụng tài khoản email cá nhân của mình để soạn và gửi một email chứa lệnh đến **Gmail chính**.
+2.  **Đọc lệnh:** **Client App** (đang chạy) kết nối đến **Gmail chính** qua giao thức IMAP, phát hiện và tải về email mới nhất để phân tích, trích xuất ra lệnh cần thực thi.
+3.  **Truyền lệnh:** **Client App** gửi lệnh vừa trích xuất được đến **Server App** thông qua một kết nối Socket đã được thiết lập.
+4.  **Thực thi:** **Server App** nhận được lệnh và gọi các hàm tương ứng để thực hiện tác vụ trên **Máy bị điều khiển** (ví dụ: chụp màn hình, liệt kê tiến trình,...).
+5.  **Tạo kết quả:** Sau khi thực thi xong, **Server App** đóng gói kết quả (dưới dạng file ảnh, video, hoặc văn bản).
+6.  **Gửi trả kết quả:** **Server App** gửi file kết quả này ngược lại cho **Client App** thông qua kết nối Socket.
+7.  **Phản hồi cho người dùng:** **Client App** nhận được file kết quả. Nó sẽ đăng nhập vào **Gmail chính** qua giao thức SMTP, soạn một email mới, đính kèm kết quả và gửi email đó đến địa chỉ **Gmail người dùng** ban đầu.
+8.  **Hoàn tất:** Người dùng nhận được email phản hồi chứa kết quả cho lệnh mà mình đã yêu cầu.
 
 ## ✨ Tính năng chính
 
