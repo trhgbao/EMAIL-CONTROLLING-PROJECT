@@ -28,37 +28,52 @@
 
 ---
 
-## 💡 Tổng quan dự án
+### 💡 Tổng quan dự án
 
-Dự án được xây dựng dựa trên mô hình Client-Server. Người dùng (User) sẽ gửi một email chứa lệnh cụ thể đến một tài khoản Gmail được chỉ định (tài khoản của Client). Ứng dụng Client sẽ liên tục kiểm tra hộp thư, phân tích email mới nhất để lấy lệnh, sau đó gửi yêu cầu đó đến ứng dụng Server qua kết nối Socket. Server sẽ thực thi lệnh trên máy tính và gửi kết quả (văn bản, hình ảnh, video...) trở lại Client. Cuối cùng, Client sẽ đóng gói kết quả và gửi một email phản hồi về cho người dùng.
+Dự án này hiện thực hóa ý tưởng điều khiển một máy tính chạy Windows từ xa thông qua việc gửi lệnh bằng email, sử dụng một tài khoản Gmail làm trung gian giao tiếp. Hệ thống được xây dựng dựa trên mô hình Client-Server nhưng được tách biệt rõ ràng giữa kênh ra lệnh (Email) và kênh thực thi (Socket).
 
-## 🔄 Luồng hoạt động
+Hệ thống bao gồm bốn thành phần chính: **Người dùng (User)**, một **tài khoản Gmail trung gian**, **Client App** (ứng dụng khách) và **Server App** (ứng dụng chủ).
+
+Thay vì kết nối trực tiếp, người dùng sẽ gửi một email chứa lệnh cụ thể đến tài khoản Gmail trung gian. **Client App**, chạy trên một máy bất kỳ, có nhiệm vụ liên tục kiểm tra hộp thư này. Khi phát hiện email lệnh mới, nó sẽ phân tích nội dung, trích xuất lệnh và gửi yêu cầu đến **Server App** thông qua kết nối Socket.
+
+**Server App**, được cài đặt trên máy tính cần điều khiển, sẽ lắng nghe và thực thi lệnh này (ví dụ: chụp màn hình, quay video, quản lý tiến trình...). Kết quả sau đó được gửi trả lại **Client App** qua Socket. Cuối cùng, **Client App** sẽ sử dụng chính tài khoản Gmail trung gian để soạn và gửi một email phản hồi, đính kèm kết quả (văn bản, hình ảnh, video...), về cho người dùng ban đầu.
+
+### 🔄 Luồng hoạt động
+
+Dự án hoạt động dựa trên sự tương tác giữa 4 thành phần chính: **Người dùng**, **Client App**, **Server App** và một **tài khoản Gmail trung gian**.
+
+*   **Máy người dùng (User Machine):** Nơi người dùng gửi lệnh từ tài khoản email cá nhân của mình. **Client App** có thể được chạy trên máy này hoặc một máy bất kỳ.
+*   **Máy bị điều khiển (Controlled Machine):** Máy tính mục tiêu cần được điều khiển từ xa. Máy này phải luôn chạy **Server App**.
+*   **Gmail chính (Main Gmail):** Là tài khoản email trung gian, đóng vai trò như một "hộp thư lệnh". Client App sẽ đọc lệnh từ đây và dùng nó để gửi kết quả về.
+*   **Client App:** Đọc lệnh từ **Gmail chính**, gửi lệnh cho **Server App** qua Socket, nhận kết quả trả về, và cuối cùng dùng **Gmail chính** để gửi email chứa kết quả cho người dùng.
+*   **Server App:** Lắng nghe yêu cầu từ Client App, thực thi các chức năng trên **Máy bị điều khiển** và gửi kết quả lại cho Client.
+
+#### Sơ đồ quy trình
 
 ```mermaid
 graph TD
     subgraph Máy người dùng
-        A[Gmail người dùng]
-        C[Client App]
+        A["Gmail người dùng"]
+        C["Client App"]
     end
 
     subgraph Dịch vụ Email
-        B[Gmail chính (Hòm thư lệnh)]
+        B["Gmail chính (Hòm thư lệnh)"]
     end
 
     subgraph Máy bị điều khiển
-        D[Server App]
-        E[Hệ thống Windows]
+        D["Server App"]
+        E["Hệ thống Windows"]
     end
 
-    A -- 1. Gửi email chứa lệnh --> B;
-    B -- 2. Đọc email mới nhất --> C;
-    C -- 3. Gửi lệnh qua Socket --> D;
-    D -- 4. Thực thi lệnh --> E;
-    E -- 5. Trả kết quả --> D;
-    D -- 6. Gửi kết quả qua Socket --> C;
-    C -- 7. Soạn và gửi email kết quả --> B;
-    B -- 8. Gửi email đến người dùng --> A;
-
+    A -- "1. Gửi email chứa lệnh" --> B;
+    B -- "2. Đọc email mới nhất" --> C;
+    C -- "3. Gửi lệnh qua Socket" --> D;
+    D -- "4. Thực thi lệnh" --> E;
+    E -- "5. Trả kết quả" --> D;
+    D -- "6. Gửi kết quả qua Socket" --> C;
+    C -- "7. Soạn và gửi email kết quả" --> B;
+    B -- "8. Gửi email đến người dùng" --> A;
 ```
 
 #### Diễn giải chi tiết
@@ -71,7 +86,6 @@ graph TD
 6.  **Gửi trả kết quả:** **Server App** gửi file kết quả này ngược lại cho **Client App** thông qua kết nối Socket.
 7.  **Phản hồi cho người dùng:** **Client App** nhận được file kết quả. Nó sẽ đăng nhập vào **Gmail chính** qua giao thức SMTP, soạn một email mới, đính kèm kết quả và gửi email đó đến địa chỉ **Gmail người dùng** ban đầu.
 8.  **Hoàn tất:** Người dùng nhận được email phản hồi chứa kết quả cho lệnh mà mình đã yêu cầu.
-
 ## ✨ Tính năng chính
 
 Ứng dụng cho phép thực hiện các tác vụ điều khiển từ xa sau:
